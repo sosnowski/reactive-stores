@@ -1,27 +1,173 @@
-# ReactiveStores
+# Reactive Stores
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 6.0.8.
+A State Management library for Angular applications.
 
-## Development server
+Partially inspired by VueX and MobX. It's designed as a developer friendly approach to state management, without a need to create a lot of biolerplate code.
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.
+#Work in progress!
 
-## Code scaffolding
+## Example usage in Angular
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+#### Create a state and store
+```TypeScript
+/**
+ * Define a state interface to keep type safety
+ */
+export interface AppState {
+    counter: number;
+}
+/**
+ * Store is simply a class that integrates easily with
+ * Angular dependency injection system
+ * So remember to use @Injectable
+ */
+@Injectable()
+export class AppStore extends Store<AppState> {
+    /**
+     * Define initial state for the store
+     */
+    @State()
+    private state: AppState = {
+        counter: 0
+    };
+    /**
+     * State can only be modified with actions
+     * Action is simply a store method, marked with @Action decorator
+     */
+    @Action()
+    incrementCounter(n: number = 1) {
+        /**
+         * You can modify state directly, don't have to worry about immutability
+         * Stora will take care of it for you
+         */
+        this.state.counter += n;
+    }
 
-## Build
+    @Action()
+    decrementCounter(n: number = 1) {
+        this.state.counter -= n;
+    }
+}
+```
+#### Register Store in Angular DI system
+```TypeScript
+@NgModule({
+  declarations: [
+    AppComponent
+  ],
+  imports: [
+    BrowserModule,
+  ],
+  providers: [
+    provideAsRoot(AppStore) // Register the store in the scope you will be using it
+  ],
+  bootstrap: [AppComponent]
+})
+export class AppModule { }
+```
+#### Uage in Component
+```TypeScript
+@Component({
+  selector: 'app-root',
+  templateUrl: './app.component.html',
+  styleUrls: ['./app.component.css']
+})
+export class AppComponent {
+    title = 'basic';
+    /**
+     * Just inject the Store as any other component dependency
+     */
+    constructor(private appStore: AppStore) {}
+}
+```
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory. Use the `--prod` flag for a production build.
+#### Reading state updates
+Store instance provides ```updates``` attribute, which is an RxJS Observable.
+```TypeScript
+store.updates.map(state => state.counter).subscribe((counter) => {
+    console.log(`Counter value: ${counter}`);
+});
+store.incrementCounter(); // Counter value: 1
+store.incrementCounter(); // Counter value: 2
+store.decrementCounter(2); // Counter value: 0
+```
 
-## Running unit tests
+## Advanced features
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
+### SubStores (Modules)
 
-## Running end-to-end tests
+#### SubStore definition
+```TypeScript
+export interface UserState {
+    name: string;
+    lastName: string;
+    age: number;
+}
 
-Run `ng e2e` to execute the end-to-end tests via [Protractor](http://www.protractortest.org/).
+@Injectable()
+export class UserStore extends SubStore<UserState> {
 
-## Further help
+    @State()
+    private state: UserState = {
+        name: 'Damian',
+        lastName: 'Sosnowski',
+        age: 32
+    };
 
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI README](https://github.com/angular/angular-cli/blob/master/README.md).
+    @Action()
+    setName(name: string) {
+        this.state.name = name;
+    }
+}
+```
+
+#### Add SubStore to the Root
+```TypeScript
+/**
+ * Root State (AppState in this case), should define a property that will store
+ * a SubState instance. In this case it's "user"
+ */
+export interface AppState {
+    user?: UserState;
+    counter: number;
+}
+
+@Injectable()
+export class AppStore extends Store<AppState> {
+
+    /**
+     * Initial state for the sub state is defined in sub store
+     */
+    @State()
+    private state: AppState = {
+        counter: 5
+    };
+    
+    /**
+     * @SubStore decorator us used to connect SubStore with it's Parent.
+     */
+    @SubStore(UserStore) user!: UserStore;
+
+    @Action()
+    incrementCounter(n: number = 1) {
+        this.state.counter += n;
+    }
+}
+```
+
+Parent has a full access to the SubStore data, but all the SubStore operations are encapsulated.
+You can listen for changes on Parent and SubStore independently. However, Parent will also emit when changes are done in its SubStores.
+
+You can nest stores as deep as you want.
+
+## Detailed achitecture and idea behind Reactive Stores
+
+### What is a state management and why should one use it
+
+### One big Store, or multiple smaller ones?
+
+### Store, State, Actions
+
+### State immutability
+
+### Selectors and Mappers
