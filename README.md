@@ -4,7 +4,10 @@ A State Management library for Angular applications.
 
 Partially inspired by VueX and MobX. It's designed as a developer friendly approach to state management, without a need to create a lot of biolerplate code.
 
-#Work in progress!
+#### Automatic immutability
+All state operations are done through Proxy, which allows to achieve a full state immutability, without forcing a developer to manually manage state modifications or perform shallow / deep state cloning.
+
+# Work in progress!
 
 ## Example usage in Angular
 
